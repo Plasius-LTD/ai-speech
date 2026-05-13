@@ -1,6 +1,6 @@
 {
   "name": "@plasius/ai-speech",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Speech orchestration, TTS cache contracts, STT/TTS routing, and voice tier policy for Plasius AI.",
   "type": "module",
   "sideEffects": false,
