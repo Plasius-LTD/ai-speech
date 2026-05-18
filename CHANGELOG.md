@@ -7,16 +7,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 - **Added**
-  - (placeholder)
+  - rollout-control, player-address, cache-planning, and voice-tier contracts for tracked TTS caching work
 
 - **Changed**
-  - (placeholder)
+  - the package descriptor now points at the tracked TTS cache feature flag instead of the original scaffold placeholder
 
 - **Fixed**
-  - (placeholder)
+  - default player-address rendering now redacts user/account identifiers before cache planning
 
 - **Security**
-  - (placeholder)
+  - near-text reuse is now fail-closed for private, moderated, or identifier-bearing speech unless the caller narrows scope safely
 
 ## [0.1.1] - 2026-05-13
 
