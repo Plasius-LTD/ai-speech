@@ -206,6 +206,25 @@ describe("ai-speech cache contracts", () => {
     });
   });
 
+  it("requires a non-empty actorScopeKey for sensitive speech", () => {
+    expect(
+      planAiSpeechCache({
+        utteranceClass: "private-response",
+        textTemplate: "Your account recovery code expires in 5 minutes.",
+        voice,
+        actorScopeKey: "   ",
+        featureFlags: {
+          [AI_SPEECH_FEATURE_FLAGS.ttsCache]: true,
+        },
+        containsPrivateContext: true,
+      })
+    ).toMatchObject({
+      mode: "no-cache",
+      sharingScope: "none",
+      reasonCodes: ["actor-scope-key-required-for-sensitive-cache-entry"],
+    });
+  });
+
   it("refuses to cache when the provider disallows reuse", () => {
     expect(
       planAiSpeechCache({

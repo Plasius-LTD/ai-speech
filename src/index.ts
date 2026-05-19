@@ -502,11 +502,12 @@ export function planAiSpeechCache(
     Boolean(input.containsPrivateContext) ||
     Boolean(input.containsModerationNotice) ||
     Boolean(rendered.playerAddress?.redacted);
+  const actorScopeKey = normalizeWhitespace(input.actorScopeKey ?? "");
 
   const actorScopeRequired =
     containsSensitiveContent || input.utteranceClass === "private-response";
 
-  if (actorScopeRequired && !input.actorScopeKey) {
+  if (actorScopeRequired && !actorScopeKey) {
     return {
       mode: "no-cache",
       sharingScope: "none",
@@ -521,7 +522,7 @@ export function planAiSpeechCache(
   const exactKey = createAiSpeechCacheKey({
     ...input.voice,
     normalizedRenderText: rendered.normalizedRenderText,
-    scopeDiscriminator: actorScopeRequired ? input.actorScopeKey : undefined,
+    scopeDiscriminator: actorScopeRequired ? actorScopeKey : undefined,
   });
 
   const nearReuseEnabled =

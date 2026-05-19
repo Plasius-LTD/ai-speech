@@ -39,7 +39,11 @@ const rendered = renderAiSpeechText({
 
 const cachePlan = planAiSpeechCache({
   utteranceClass: "player-address",
-  textTemplate: rendered.renderText,
+  textTemplate: "Welcome back, {playerAddress}.",
+  playerAddress: {
+    source: "user-name",
+    rawValue: "Captain Zephod",
+  },
   voice: {
     providerId: "openai",
     modelId: "gpt-tts-1",
