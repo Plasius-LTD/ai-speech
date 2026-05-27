@@ -118,6 +118,33 @@ describe("ai-speech player address policy", () => {
     });
   });
 
+  it("falls back class or faction titles only when their safe title is blank", () => {
+    expect(
+      resolveAiSpeechPlayerAddress({
+        source: "faction-title",
+        rawValue: "   ",
+        fallbackLabel: "Ally",
+      })
+    ).toEqual({
+      source: "faction-title",
+      renderText: "Ally",
+      exactReuseAllowed: true,
+      nearReuseAllowed: true,
+      redacted: false,
+      reasonCodes: ["player-address-fell-back-to-generic-label"],
+    });
+
+    expect(
+      resolveAiSpeechPlayerAddress({
+        source: "authored-character",
+        rawValue: "Mara",
+      })
+    ).toMatchObject({
+      renderText: "Mara",
+      reasonCodes: [],
+    });
+  });
+
   it("rejects empty templates and missing player placeholders", () => {
     expect(() => renderAiSpeechText({ textTemplate: "   " })).toThrow(
       "Speech text template must be a non-empty string."
@@ -216,6 +243,23 @@ describe("ai-speech cache contracts", () => {
     });
   });
 
+  it("uses a global exact cache when near-reuse is not enabled", () => {
+    expect(
+      planAiSpeechCache({
+        utteranceClass: "system-generic",
+        textTemplate: "The server restarts at midnight.",
+        voice,
+        featureFlags: {
+          [AI_SPEECH_FEATURE_FLAGS.ttsCache]: true,
+        },
+      })
+    ).toMatchObject({
+      mode: "exact",
+      sharingScope: "global",
+      reasonCodes: ["near-reuse-disabled-or-ineligible"],
+    });
+  });
+
   it("falls back to actor-scoped exact cache for redacted player identifiers", () => {
     expect(
       planAiSpeechCache({
@@ -307,6 +351,18 @@ describe("ai-speech voice tier routing", () => {
     ).toEqual({
       requestedTier: "development",
       resolvedTier: "development",
+      reasonCodes: [],
+    });
+  });
+
+  it("defaults to standard voices outside development", () => {
+    expect(
+      resolveAiSpeechVoiceTier({
+        environment: "production",
+      })
+    ).toEqual({
+      requestedTier: "standard",
+      resolvedTier: "standard",
       reasonCodes: [],
     });
   });
