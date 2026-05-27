@@ -58,9 +58,33 @@ describe("ai-speech rollout controls", () => {
       source: "snapshot",
     });
   });
+
+  it("fails closed for unknown feature flag lookups", () => {
+    expect(
+      isAiSpeechFeatureEnabled("ai.tts.future-flag.enabled" as never, {
+        [AI_SPEECH_FEATURE_FLAGS.ttsCache]: true,
+      })
+    ).toBe(false);
+  });
 });
 
 describe("ai-speech player address policy", () => {
+  it("uses generic player labels as reusable public address text", () => {
+    expect(
+      resolveAiSpeechPlayerAddress({
+        source: "generic-player",
+        fallbackLabel: "Hero",
+      })
+    ).toEqual({
+      source: "generic-player",
+      renderText: "Hero",
+      exactReuseAllowed: true,
+      nearReuseAllowed: true,
+      redacted: false,
+      reasonCodes: ["generic-player-address"],
+    });
+  });
+
   it("redacts user-provided names from default render text", () => {
     expect(
       resolveAiSpeechPlayerAddress({
@@ -75,6 +99,34 @@ describe("ai-speech player address policy", () => {
       redacted: true,
       reasonCodes: ["player-identifier-redacted-from-render-text"],
     });
+  });
+
+  it("falls back authored character addresses when no safe name is provided", () => {
+    expect(
+      resolveAiSpeechPlayerAddress({
+        source: "authored-character",
+        rawValue: "   ",
+        fallbackLabel: "Adventurer",
+      })
+    ).toEqual({
+      source: "authored-character",
+      renderText: "Adventurer",
+      exactReuseAllowed: true,
+      nearReuseAllowed: true,
+      redacted: false,
+      reasonCodes: ["player-address-fell-back-to-generic-label"],
+    });
+  });
+
+  it("rejects empty templates and missing player placeholders", () => {
+    expect(() => renderAiSpeechText({ textTemplate: "   " })).toThrow(
+      "Speech text template must be a non-empty string."
+    );
+    expect(() =>
+      renderAiSpeechText({ textTemplate: "Welcome back, {playerAddress}." })
+    ).toThrow(
+      "Speech text template requires playerAddress when using the {playerAddress} placeholder."
+    );
   });
 
   it("renders cache-safe text with player placeholders", () => {
@@ -256,6 +308,20 @@ describe("ai-speech voice tier routing", () => {
       requestedTier: "development",
       resolvedTier: "development",
       reasonCodes: [],
+    });
+  });
+
+  it("uses standard voices when development voices are requested outside development", () => {
+    expect(
+      resolveAiSpeechVoiceTier({
+        environment: "production",
+        requestedTier: "development",
+      })
+    ).toEqual({
+      requestedTier: "development",
+      resolvedTier: "standard",
+      fallbackTier: "standard",
+      reasonCodes: ["development-voices-limited-to-development-environments"],
     });
   });
 
