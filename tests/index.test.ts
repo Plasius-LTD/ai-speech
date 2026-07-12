@@ -2,17 +2,24 @@ import { describe, expect, it } from "vitest";
 
 import {
   AI_SPEECH_DEFAULT_PLAYER_LABEL,
+  AI_SPEECH_AUDIO_CHANNELS,
+  AI_SPEECH_AUDIO_CUE_FAMILIES,
   AI_SPEECH_ENV_PREFIX,
   AI_SPEECH_FEATURE_FLAGS,
   AI_SPEECH_FEATURE_FLAG_ID,
+  AI_SPEECH_PLAYER_SYSTEM_AUDIO_FLAG_ID,
   AI_SPEECH_PACKAGE,
   AI_SPEECH_ROLLOUTS,
+  createAiSpeechLocalizedCue,
+  createAiSpeechNarratedResponse,
+  createAiSpeechRepeatingWarning,
   createAiSpeechCacheKey,
   createAiSpeechNearReuseFingerprint,
   isAiSpeechFeatureEnabled,
   packageDescriptor,
   planAiSpeechCache,
   renderAiSpeechText,
+  resolveAiSpeechAudioPolicy,
   resolveAiSpeechPlayerAddress,
   resolveAiSpeechRolloutDecision,
   resolveAiSpeechVoiceTier,
@@ -410,5 +417,241 @@ describe("ai-speech voice tier routing", () => {
       resolvedTier: "premium-character",
       reasonCodes: [],
     });
+  });
+});
+
+describe("ai-speech Player System audio contracts", () => {
+  const base = {
+    id: "system-status",
+    priority: "high" as const,
+    ducking: "music" as const,
+    combatSafeDelivery: "full" as const,
+  };
+
+  it("exports separate channels and localized cue families", () => {
+    expect(AI_SPEECH_AUDIO_CHANNELS).toEqual([
+      "narrated-response",
+      "localized-cue",
+      "repeating-warning",
+    ]);
+    expect(AI_SPEECH_AUDIO_CUE_FAMILIES).toContain("tutorial");
+    expect(AI_SPEECH_PLAYER_SYSTEM_AUDIO_FLAG_ID).toBe(
+      "isekai.player-system.audio.enabled"
+    );
+  });
+
+  it("creates immutable narrated, localized, and repeating contracts", () => {
+    const narration = createAiSpeechNarratedResponse({
+      ...base,
+      utteranceId: "mission-briefing-1",
+      locale: "en-GB",
+      combatSafeDelivery: "condensed",
+    });
+    const cue = createAiSpeechLocalizedCue({
+      ...base,
+      cueFamily: "tutorial",
+      cueId: "tutorial-first-spell",
+      locale: "en-GB",
+    });
+    const warning = createAiSpeechRepeatingWarning({
+      ...base,
+      priority: "critical",
+      warningId: "combat-threat",
+      intervalSeconds: 5,
+      maximumOccurrencesPerMinute: 6,
+    });
+
+    expect(narration.channel).toBe("narrated-response");
+    expect(narration.combatSafeDelivery).toBe("condensed");
+    expect(cue).toMatchObject({
+      channel: "localized-cue",
+      cueFamily: "tutorial",
+      cueId: "tutorial-first-spell",
+    });
+    expect(warning).toMatchObject({
+      channel: "repeating-warning",
+      intervalSeconds: 5,
+      maximumOccurrencesPerMinute: 6,
+    });
+    expect(Object.isFrozen(narration)).toBe(true);
+    expect(Object.isFrozen(cue)).toBe(true);
+    expect(Object.isFrozen(warning)).toBe(true);
+  });
+
+  it("rejects unbounded repeating warning delivery", () => {
+    expect(() =>
+      createAiSpeechRepeatingWarning({
+        ...base,
+        warningId: "combat-threat",
+        intervalSeconds: 0,
+        maximumOccurrencesPerMinute: 6,
+      })
+    ).toThrow("Warning intervalSeconds must be between 1 and 3600");
+    expect(() =>
+      createAiSpeechRepeatingWarning({
+        ...base,
+        warningId: "combat-threat",
+        intervalSeconds: 5,
+        maximumOccurrencesPerMinute: 61,
+      })
+    ).toThrow("Warning maximumOccurrencesPerMinute must be between 1 and 60");
+  });
+
+  it("rejects unknown audio enum values", () => {
+    expect(() =>
+      createAiSpeechLocalizedCue({
+        ...base,
+        cueFamily: "unknown" as never,
+        cueId: "unknown-cue",
+        locale: "en-GB",
+      })
+    ).toThrow("Audio cue family is not supported: unknown");
+  });
+
+  it("fails closed when audio rollout is missing", () => {
+    const decision = resolveAiSpeechAudioPolicy({
+      contract: createAiSpeechLocalizedCue({
+        ...base,
+        cueFamily: "status",
+        cueId: "status-ready",
+        locale: "en-GB",
+      }),
+      focusMode: "ambient",
+    });
+
+    expect(decision).toEqual({
+      deliver: false,
+      mode: "deferred",
+      ducking: "none",
+      reasonCodes: ["player-system-audio-rollout-disabled"],
+    });
+  });
+
+  it("suppresses lower-priority audio in combat-safe mode", () => {
+    const decision = resolveAiSpeechAudioPolicy({
+      contract: createAiSpeechLocalizedCue({
+        ...base,
+        priority: "normal",
+        cueFamily: "mission",
+        cueId: "mission-progress",
+        locale: "en-GB",
+      }),
+      focusMode: "combat-safe",
+      featureFlags: {
+        [AI_SPEECH_PLAYER_SYSTEM_AUDIO_FLAG_ID]: true,
+      },
+    });
+
+    expect(decision).toMatchObject({
+      deliver: false,
+      reasonCodes: ["combat-safe-priority-suppressed"],
+    });
+  });
+
+  it("condenses narrated responses and bypasses ducking for critical warnings", () => {
+    const narrationDecision = resolveAiSpeechAudioPolicy({
+      contract: createAiSpeechNarratedResponse({
+        ...base,
+        utteranceId: "tutorial-combat-hint",
+        locale: "en-GB",
+        combatSafeDelivery: "condensed",
+      }),
+      focusMode: "combat-safe",
+      featureFlags: {
+        [AI_SPEECH_PLAYER_SYSTEM_AUDIO_FLAG_ID]: true,
+      },
+    });
+    const warningDecision = resolveAiSpeechAudioPolicy({
+      contract: createAiSpeechRepeatingWarning({
+        ...base,
+        priority: "critical",
+        warningId: "critical-threat",
+        intervalSeconds: 3,
+        maximumOccurrencesPerMinute: 10,
+      }),
+      focusMode: "combat-safe",
+      featureFlags: {
+        [AI_SPEECH_PLAYER_SYSTEM_AUDIO_FLAG_ID]: true,
+      },
+    });
+
+    expect(narrationDecision).toMatchObject({
+      deliver: true,
+      mode: "condensed",
+      ducking: "music",
+    });
+    expect(
+      resolveAiSpeechAudioPolicy({
+        contract: createAiSpeechNarratedResponse({
+          ...base,
+          utteranceId: "tutorial-deferred-hint",
+          locale: "en-GB",
+          combatSafeDelivery: "deferred",
+        }),
+        focusMode: "combat-safe",
+        featureFlags: {
+          [AI_SPEECH_PLAYER_SYSTEM_AUDIO_FLAG_ID]: true,
+        },
+      })
+    ).toMatchObject({
+      deliver: false,
+      mode: "deferred",
+    });
+    expect(warningDecision).toMatchObject({
+      deliver: true,
+      mode: "full",
+      ducking: "none",
+      reasonCodes: ["critical-priority-bypasses-ducking"],
+    });
+  });
+
+  it("suppresses duplicate and muted dispatches", () => {
+    const contract = createAiSpeechLocalizedCue({
+      ...base,
+      cueFamily: "status",
+      cueId: "status-ready",
+      locale: "en-GB",
+    });
+    const enabledFlags = {
+      [AI_SPEECH_PLAYER_SYSTEM_AUDIO_FLAG_ID]: true,
+    };
+
+    expect(
+      resolveAiSpeechAudioPolicy({
+        contract,
+        focusMode: "focused",
+        featureFlags: enabledFlags,
+        activeContractIds: [contract.id],
+      }).reasonCodes
+    ).toEqual(["duplicate-audio-contract-suppressed"]);
+    expect(
+      resolveAiSpeechAudioPolicy({
+        contract,
+        focusMode: "focused",
+        featureFlags: enabledFlags,
+        userMuted: true,
+      }).reasonCodes
+    ).toEqual(["user-muted"]);
+    expect(
+      resolveAiSpeechAudioPolicy({
+        contract: createAiSpeechLocalizedCue({
+          ...base,
+          cueFamily: "status",
+          cueId: "status-suppressed",
+          locale: "en-GB",
+          combatSafeDelivery: "suppressed",
+        }),
+        focusMode: "ambient",
+        featureFlags: enabledFlags,
+      }).reasonCodes
+    ).toEqual(["audio-contract-suppressed"]);
+    expect(
+      resolveAiSpeechAudioPolicy({
+        contract,
+        focusMode: "focused",
+        featureFlags: enabledFlags,
+        masterMuted: true,
+      }).reasonCodes
+    ).toEqual(["master-muted"]);
   });
 });

@@ -572,6 +572,326 @@ export function planAiSpeechCache(
   };
 }
 
+export const AI_SPEECH_PLAYER_SYSTEM_AUDIO_FLAG_ID =
+  "isekai.player-system.audio.enabled" as const;
+
+export const AI_SPEECH_AUDIO_CHANNELS = [
+  "narrated-response",
+  "localized-cue",
+  "repeating-warning",
+] as const;
+
+export type AiSpeechAudioChannel = (typeof AI_SPEECH_AUDIO_CHANNELS)[number];
+
+export const AI_SPEECH_AUDIO_PRIORITIES = [
+  "critical",
+  "high",
+  "normal",
+  "low",
+] as const;
+
+export type AiSpeechAudioPriority =
+  (typeof AI_SPEECH_AUDIO_PRIORITIES)[number];
+
+export const AI_SPEECH_AUDIO_DUCKING_MODES = [
+  "none",
+  "music",
+  "non-critical",
+  "lower-priority",
+] as const;
+
+export type AiSpeechAudioDuckingMode =
+  (typeof AI_SPEECH_AUDIO_DUCKING_MODES)[number];
+
+export const AI_SPEECH_AUDIO_CUE_FAMILIES = [
+  "status",
+  "tutorial",
+  "mission",
+  "mcc",
+  "warning",
+] as const;
+
+export type AiSpeechAudioCueFamily =
+  (typeof AI_SPEECH_AUDIO_CUE_FAMILIES)[number];
+
+export const AI_SPEECH_AUDIO_FOCUS_MODES = [
+  "ambient",
+  "focused",
+  "combat-safe",
+] as const;
+
+export type AiSpeechAudioFocusMode =
+  (typeof AI_SPEECH_AUDIO_FOCUS_MODES)[number];
+
+export const AI_SPEECH_AUDIO_COMBAT_SAFE_DELIVERIES = [
+  "full",
+  "condensed",
+  "deferred",
+  "suppressed",
+] as const;
+
+export type AiSpeechAudioCombatSafeDelivery =
+  (typeof AI_SPEECH_AUDIO_COMBAT_SAFE_DELIVERIES)[number];
+
+export interface AiSpeechAudioContractBase {
+  readonly id: string;
+  readonly featureFlagId: typeof AI_SPEECH_PLAYER_SYSTEM_AUDIO_FLAG_ID;
+  readonly priority: AiSpeechAudioPriority;
+  readonly ducking: AiSpeechAudioDuckingMode;
+  readonly combatSafeDelivery: AiSpeechAudioCombatSafeDelivery;
+}
+
+export interface AiSpeechNarratedResponseContract
+  extends AiSpeechAudioContractBase {
+  readonly channel: "narrated-response";
+  readonly utteranceId: string;
+  readonly locale: string;
+}
+
+export interface AiSpeechLocalizedCueContract extends AiSpeechAudioContractBase {
+  readonly channel: "localized-cue";
+  readonly cueFamily: AiSpeechAudioCueFamily;
+  readonly cueId: string;
+  readonly locale: string;
+}
+
+export interface AiSpeechRepeatingWarningContract
+  extends AiSpeechAudioContractBase {
+  readonly channel: "repeating-warning";
+  readonly warningId: string;
+  readonly intervalSeconds: number;
+  readonly maximumOccurrencesPerMinute: number;
+}
+
+export type AiSpeechAudioContract =
+  | AiSpeechNarratedResponseContract
+  | AiSpeechLocalizedCueContract
+  | AiSpeechRepeatingWarningContract;
+
+export interface AiSpeechAudioContractBaseInput {
+  readonly id: string;
+  readonly priority: AiSpeechAudioPriority;
+  readonly ducking: AiSpeechAudioDuckingMode;
+  readonly combatSafeDelivery: AiSpeechAudioCombatSafeDelivery;
+}
+
+export interface CreateAiSpeechNarratedResponseInput
+  extends AiSpeechAudioContractBaseInput {
+  readonly utteranceId: string;
+  readonly locale: string;
+}
+
+export interface CreateAiSpeechLocalizedCueInput
+  extends AiSpeechAudioContractBaseInput {
+  readonly cueFamily: AiSpeechAudioCueFamily;
+  readonly cueId: string;
+  readonly locale: string;
+}
+
+export interface CreateAiSpeechRepeatingWarningInput
+  extends AiSpeechAudioContractBaseInput {
+  readonly warningId: string;
+  readonly intervalSeconds: number;
+  readonly maximumOccurrencesPerMinute: number;
+}
+
+function requireAudioEnum<T extends string>(
+  value: T,
+  allowed: readonly T[],
+  label: string
+): T {
+  if (!allowed.includes(value)) {
+    throw new Error(`${label} is not supported: ${value}.`);
+  }
+
+  return value;
+}
+
+function requireBoundedAudioNumber(
+  value: number,
+  minimum: number,
+  maximum: number,
+  label: string
+): number {
+  if (!Number.isFinite(value) || value < minimum || value > maximum) {
+    throw new Error(
+      `${label} must be between ${minimum} and ${maximum}, inclusive.`
+    );
+  }
+
+  return value;
+}
+
+function createAiSpeechAudioContractBase(
+  input: AiSpeechAudioContractBaseInput
+): AiSpeechAudioContractBase {
+  return {
+    id: requireNonEmptyString(input.id, "Audio contract id"),
+    featureFlagId: AI_SPEECH_PLAYER_SYSTEM_AUDIO_FLAG_ID,
+    priority: requireAudioEnum(
+      input.priority,
+      AI_SPEECH_AUDIO_PRIORITIES,
+      "Audio priority"
+    ),
+    ducking: requireAudioEnum(
+      input.ducking,
+      AI_SPEECH_AUDIO_DUCKING_MODES,
+      "Audio ducking mode"
+    ),
+    combatSafeDelivery: requireAudioEnum(
+      input.combatSafeDelivery,
+      AI_SPEECH_AUDIO_COMBAT_SAFE_DELIVERIES,
+      "Combat-safe audio delivery"
+    ),
+  };
+}
+
+export function createAiSpeechNarratedResponse(
+  input: CreateAiSpeechNarratedResponseInput
+): AiSpeechNarratedResponseContract {
+  return Object.freeze({
+    ...createAiSpeechAudioContractBase(input),
+    channel: "narrated-response" as const,
+    utteranceId: requireNonEmptyString(input.utteranceId, "Utterance id"),
+    locale: requireNonEmptyString(input.locale, "Locale"),
+  });
+}
+
+export function createAiSpeechLocalizedCue(
+  input: CreateAiSpeechLocalizedCueInput
+): AiSpeechLocalizedCueContract {
+  return Object.freeze({
+    ...createAiSpeechAudioContractBase(input),
+    channel: "localized-cue" as const,
+    cueFamily: requireAudioEnum(
+      input.cueFamily,
+      AI_SPEECH_AUDIO_CUE_FAMILIES,
+      "Audio cue family"
+    ),
+    cueId: requireNonEmptyString(input.cueId, "Cue id"),
+    locale: requireNonEmptyString(input.locale, "Locale"),
+  });
+}
+
+export function createAiSpeechRepeatingWarning(
+  input: CreateAiSpeechRepeatingWarningInput
+): AiSpeechRepeatingWarningContract {
+  return Object.freeze({
+    ...createAiSpeechAudioContractBase(input),
+    channel: "repeating-warning" as const,
+    warningId: requireNonEmptyString(input.warningId, "Warning id"),
+    intervalSeconds: requireBoundedAudioNumber(
+      input.intervalSeconds,
+      1,
+      3600,
+      "Warning intervalSeconds"
+    ),
+    maximumOccurrencesPerMinute: requireBoundedAudioNumber(
+      input.maximumOccurrencesPerMinute,
+      1,
+      60,
+      "Warning maximumOccurrencesPerMinute"
+    ),
+  });
+}
+
+export interface ResolveAiSpeechAudioPolicyInput {
+  readonly contract: AiSpeechAudioContract;
+  readonly focusMode: AiSpeechAudioFocusMode;
+  readonly featureFlags?: AiSpeechFeatureFlagSnapshot;
+  readonly masterMuted?: boolean;
+  readonly userMuted?: boolean;
+  readonly activeContractIds?: readonly string[];
+}
+
+export interface AiSpeechAudioPolicyDecision {
+  readonly deliver: boolean;
+  readonly mode: "full" | "condensed" | "deferred";
+  readonly ducking: AiSpeechAudioDuckingMode;
+  readonly reasonCodes: readonly string[];
+}
+
+function isPlayerSystemAudioEnabled(
+  featureFlags: AiSpeechFeatureFlagSnapshot = {}
+): boolean {
+  return featureFlags[AI_SPEECH_PLAYER_SYSTEM_AUDIO_FLAG_ID] === true;
+}
+
+export function resolveAiSpeechAudioPolicy(
+  input: ResolveAiSpeechAudioPolicyInput
+): AiSpeechAudioPolicyDecision {
+  const { contract } = input;
+
+  if (!isPlayerSystemAudioEnabled(input.featureFlags)) {
+    return {
+      deliver: false,
+      mode: "deferred",
+      ducking: "none",
+      reasonCodes: ["player-system-audio-rollout-disabled"],
+    };
+  }
+
+  if (input.masterMuted || input.userMuted) {
+    return {
+      deliver: false,
+      mode: "deferred",
+      ducking: "none",
+      reasonCodes: [input.masterMuted ? "master-muted" : "user-muted"],
+    };
+  }
+
+  if (input.activeContractIds?.includes(contract.id)) {
+    return {
+      deliver: false,
+      mode: "deferred",
+      ducking: "none",
+      reasonCodes: ["duplicate-audio-contract-suppressed"],
+    };
+  }
+
+  if (
+    input.focusMode === "combat-safe" &&
+    contract.priority !== "critical" &&
+    contract.priority !== "high"
+  ) {
+    return {
+      deliver: false,
+      mode: "deferred",
+      ducking: "none",
+      reasonCodes: ["combat-safe-priority-suppressed"],
+    };
+  }
+
+  if (contract.combatSafeDelivery === "suppressed") {
+    return {
+      deliver: false,
+      mode: "deferred",
+      ducking: "none",
+      reasonCodes: ["audio-contract-suppressed"],
+    };
+  }
+
+  const mode =
+    input.focusMode === "combat-safe"
+      ? contract.combatSafeDelivery === "condensed"
+        ? "condensed"
+        : contract.combatSafeDelivery === "deferred"
+          ? "deferred"
+          : "full"
+      : "full";
+  const ducking = contract.priority === "critical" ? "none" : contract.ducking;
+
+  return {
+    deliver: mode !== "deferred",
+    mode,
+    ducking,
+    reasonCodes:
+      contract.priority === "critical"
+        ? ["critical-priority-bypasses-ducking"]
+        : [],
+  };
+}
+
 export const packageDescriptor: AiPackageDescriptor = Object.freeze({
   packageName: AI_SPEECH_PACKAGE,
   featureFlagId: AI_SPEECH_FEATURE_FLAG_ID,
