@@ -7,16 +7,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 - **Added**
-  - (placeholder)
+  - Player System audio contracts for narrated responses, localized cues, repeating warnings, priority/ducking policy, and combat-safe delivery under `isekai.player-system.audio.enabled`.
 
 - **Changed**
-  - (placeholder)
+  - (none)
 
 - **Fixed**
-  - (placeholder)
+  - (none)
 
 - **Security**
-  - (placeholder)
+  - Audio contracts use opaque utterance/cue identifiers and bounded warning delivery; raw speech text and provider credentials remain outside the package.
 
 ## [0.1.6] - 2026-06-28
 

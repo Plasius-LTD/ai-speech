@@ -10,6 +10,8 @@ This package defines public contracts for:
 - cache-safe player address rendering
 - development, standard, and premium-character voice tier routing
 - cache telemetry payloads
+- Player System narrated responses, localized one-shot cues, and repeating warnings
+- priority, ducking, suppression, and combat-safe delivery policy
 
 It does not fetch remote feature flags, talk to providers, or store cache entries directly. Host applications and provider adapters remain responsible for runtime I/O.
 
@@ -80,6 +82,49 @@ console.log(voiceTier.resolvedTier);
 - `ai.tts.premium-characters.enabled`: enables premium character voices in production routes
 
 Default behavior is fail-closed when the caller does not provide a remote flag snapshot.
+
+## Player System audio contracts
+
+Player System audio is enabled by the remotely evaluated
+`isekai.player-system.audio.enabled` flag. The package keeps the three delivery
+channels distinct so hosts can apply separate UX and accessibility behavior:
+
+- `narrated-response` uses an opaque utterance ID and locale; raw speech text
+  stays with the host/provider pipeline.
+- `localized-cue` uses a stable cue ID, locale, and one of the exported families
+  `status`, `tutorial`, `mission`, `mcc`, or `warning`.
+- `repeating-warning` requires bounded repeat intervals and per-minute limits.
+
+Contracts carry `critical`, `high`, `normal`, or `low` priority plus an explicit
+ducking mode. Critical audio bypasses ducking. Combat-safe policy suppresses
+normal and low priority audio, allows high and critical audio, and can condense
+or defer narration according to the contract. Rollout-disabled, muted, duplicate,
+and explicitly suppressed dispatches fail closed with a reason code.
+
+```ts
+import {
+  AI_SPEECH_PLAYER_SYSTEM_AUDIO_FLAG_ID,
+  createAiSpeechNarratedResponse,
+  resolveAiSpeechAudioPolicy,
+} from "@plasius/ai-speech";
+
+const narration = createAiSpeechNarratedResponse({
+  id: "tutorial-combat-hint",
+  utteranceId: "tutorial-combat-hint-v1",
+  locale: "en-GB",
+  priority: "high",
+  ducking: "music",
+  combatSafeDelivery: "condensed",
+});
+
+const decision = resolveAiSpeechAudioPolicy({
+  contract: narration,
+  focusMode: "combat-safe",
+  featureFlags: {
+    [AI_SPEECH_PLAYER_SYSTEM_AUDIO_FLAG_ID]: true,
+  },
+});
+```
 
 ## Cache Safety Rules
 
