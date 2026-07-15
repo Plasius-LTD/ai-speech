@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - (placeholder)
 
 - **Changed**
-  - (placeholder)
+  - **Breaking:** replaced the exported Player System audio rollout value from `isekai.player-system.audio.enabled` to `harmony.player-system.audio.enabled`. The next release is a major version and intentionally provides no alias, dual-read parsing, or legacy runtime fallback.
 
 - **Fixed**
   - (placeholder)

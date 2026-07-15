@@ -573,7 +573,7 @@ export function planAiSpeechCache(
 }
 
 export const AI_SPEECH_PLAYER_SYSTEM_AUDIO_FLAG_ID =
-  "isekai.player-system.audio.enabled" as const;
+  "harmony.player-system.audio.enabled" as const;
 
 export const AI_SPEECH_AUDIO_CHANNELS = [
   "narrated-response",
