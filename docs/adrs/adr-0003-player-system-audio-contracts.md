@@ -22,7 +22,7 @@ contracts use opaque IDs and locales, reuse the Player System priority
 vocabulary, require explicit ducking and combat-safe delivery behavior, and
 bound repeating-warning intervals and frequencies.
 
-The policy is fail-closed when `isekai.player-system.audio.enabled` is absent or
+The policy is fail-closed when `harmony.player-system.audio.enabled` is absent or
 false, when audio is muted, when a dispatch is duplicated, or when combat-safe
 mode suppresses its priority. Critical audio bypasses ducking; normal and low
 priority audio are suppressed during combat-safe mode; narration may be

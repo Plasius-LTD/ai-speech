@@ -436,7 +436,16 @@ describe("ai-speech Player System audio contracts", () => {
     ]);
     expect(AI_SPEECH_AUDIO_CUE_FAMILIES).toContain("tutorial");
     expect(AI_SPEECH_PLAYER_SYSTEM_AUDIO_FLAG_ID).toBe(
-      "isekai.player-system.audio.enabled"
+      "harmony.player-system.audio.enabled"
+    );
+  });
+
+  it("contains no legacy Isekai namespace in exported runtime rollout contracts", () => {
+    expect(AI_SPEECH_PLAYER_SYSTEM_AUDIO_FLAG_ID.startsWith("harmony.")).toBe(
+      true
+    );
+    expect(AI_SPEECH_PLAYER_SYSTEM_AUDIO_FLAG_ID.startsWith("isekai.")).toBe(
+      false
     );
   });
 

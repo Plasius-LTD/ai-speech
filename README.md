@@ -86,7 +86,7 @@ Default behavior is fail-closed when the caller does not provide a remote flag s
 ## Player System audio contracts
 
 Player System audio is enabled by the remotely evaluated
-`isekai.player-system.audio.enabled` flag. The package keeps the three delivery
+`harmony.player-system.audio.enabled` flag. The package keeps the three delivery
 channels distinct so hosts can apply separate UX and accessibility behavior:
 
 - `narrated-response` uses an opaque utterance ID and locale; raw speech text
@@ -126,6 +126,18 @@ const decision = resolveAiSpeechAudioPolicy({
 });
 ```
 
+## Project Harmony namespace migration
+
+The Project Harmony cutover is a breaking public-contract change. Consumers
+moving to the next major release must replace
+`isekai.player-system.audio.enabled` with
+`harmony.player-system.audio.enabled` before enabling
+`harmony.namespace-cutover.enabled`.
+
+The package publishes only the Harmony value. It provides no alias, dual-read
+parsing, environment fallback, or runtime translation for the previous product
+namespace. Host applications remain responsible for remote flag evaluation.
+
 ## Cache Safety Rules
 
 - User names, account handles, and user-renamed character names are redacted to a generic label such as `Player`.
@@ -138,6 +150,7 @@ const decision = resolveAiSpeechAudioPolicy({
 - Disable `ai.tts.near-reuse.enabled` to force safe callers back to exact-cache planning.
 - Disable `ai.tts.cache.enabled` to bypass cache planning entirely.
 - Disable `ai.tts.premium-characters.enabled` to downgrade premium character requests to standard voices.
+- For namespace rollback, disable `harmony.namespace-cutover.enabled`, restore the previous coordinated package majors, and complete the approved reverse stored-value migration before re-enabling consumers.
 
 ## Development
 
