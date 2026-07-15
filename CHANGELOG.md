@@ -10,6 +10,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - (placeholder)
 
 - **Changed**
+  - (placeholder)
+
+- **Fixed**
+  - (placeholder)
+
+- **Security**
+  - (placeholder)
+
+## [1.0.0] - 2026-07-15
+
+- **Added**
+  - (placeholder)
+
+- **Changed**
   - **Breaking:** replaced the exported Player System audio rollout value from `isekai.player-system.audio.enabled` to `harmony.player-system.audio.enabled`. The next release is a major version and intentionally provides no alias, dual-read parsing, or legacy runtime fallback.
 
 - **Fixed**
@@ -84,3 +98,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [0.1.5]: https://github.com/Plasius-LTD/ai-speech/releases/tag/v0.1.5
 [0.1.6]: https://github.com/Plasius-LTD/ai-speech/releases/tag/v0.1.6
 [0.1.7]: https://github.com/Plasius-LTD/ai-speech/releases/tag/v0.1.7
+[1.0.0]: https://github.com/Plasius-LTD/ai-speech/releases/tag/v1.0.0
