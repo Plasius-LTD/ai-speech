@@ -10,6 +10,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - (placeholder)
 
 - **Changed**
+  - (placeholder)
+
+- **Fixed**
+  - (placeholder)
+
+- **Security**
+  - (placeholder)
+
+## [1.0.1] - 2026-08-30
+
+- **Added**
+  - (placeholder)
+
+- **Changed**
   - Restored exact-main npm publication on a GitHub-hosted runner through
     short-lived OIDC, with an enforced Node/npm runtime and no long-lived
     write-token fallback.
@@ -105,3 +119,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [0.1.6]: https://github.com/Plasius-LTD/ai-speech/releases/tag/v0.1.6
 [0.1.7]: https://github.com/Plasius-LTD/ai-speech/releases/tag/v0.1.7
 [1.0.0]: https://github.com/Plasius-LTD/ai-speech/releases/tag/v1.0.0
+[1.0.1]: https://github.com/Plasius-LTD/ai-speech/releases/tag/v1.0.1
