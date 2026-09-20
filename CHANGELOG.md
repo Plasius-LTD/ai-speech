@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+- **Added**
+  - (placeholder)
+
+- **Changed**
+  - (placeholder)
+
+- **Fixed**
+  - (placeholder)
+
+- **Security**
+  - (placeholder)
+
+## [1.0.3] - 2026-09-20
+
 - Refresh npm dependency lockfile to current supported stable versions (weekly maintenance, 2026-09-20).
 
 - **Added**
@@ -142,3 +156,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [1.0.0]: https://github.com/Plasius-LTD/ai-speech/releases/tag/v1.0.0
 [1.0.1]: https://github.com/Plasius-LTD/ai-speech/releases/tag/v1.0.1
 [1.0.2]: https://github.com/Plasius-LTD/ai-speech/releases/tag/v1.0.2
+[1.0.3]: https://github.com/Plasius-LTD/ai-speech/releases/tag/v1.0.3
