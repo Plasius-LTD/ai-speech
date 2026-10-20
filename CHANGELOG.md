@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - (placeholder)
 
 - **Fixed**
-  - (placeholder)
+  - Versioned TTS cache scope keys now keep global and actor identities disjoint and preserve distinct opaque actor identifiers.
 
 - **Security**
   - (placeholder)
