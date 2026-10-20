@@ -207,6 +207,83 @@ describe("ai-speech cache contracts", () => {
     ).toContain("welcome%20back%2C%20ranger.");
   });
 
+  it("separates global keys from every actor scope, including the name global", () => {
+    const keyInput = {
+      ...voice,
+      cachePermission: "exact-only" as const,
+      normalizedRenderText: "Synthetic cache fixture",
+    };
+
+    expect(
+      createAiSpeechCacheKey({ ...keyInput, scopeDiscriminator: "global" })
+    ).not.toBe(createAiSpeechCacheKey(keyInput));
+  });
+
+  it("preserves opaque actor identity across whitespace, delimiters, and Unicode", () => {
+    const keyInput = {
+      ...voice,
+      cachePermission: "exact-only" as const,
+      normalizedRenderText: "Synthetic cache fixture",
+    };
+    const actorKeys = [
+      "actor  one",
+      "actor one",
+      "actor::global",
+      "actor%3A%3Aglobal",
+      "玩家-一",
+    ].map((scopeDiscriminator) =>
+      createAiSpeechCacheKey({ ...keyInput, scopeDiscriminator })
+    );
+
+    expect(new Set(actorKeys).size).toBe(actorKeys.length);
+    expect(() =>
+      createAiSpeechCacheKey({ ...keyInput, scopeDiscriminator: "   " })
+    ).toThrow("Actor scope key must be a non-empty string.");
+  });
+
+  it("keeps actor and global identities distinct in exact planner results", () => {
+    const flags = {
+      [AI_SPEECH_FEATURE_FLAGS.ttsCache]: true,
+      [AI_SPEECH_FEATURE_FLAGS.ttsNearReuse]: true,
+    };
+    const exactOnlyVoice = { ...voice, cachePermission: "exact-only" as const };
+    const globalPlan = planAiSpeechCache({
+      utteranceClass: "system-generic",
+      textTemplate: "Synthetic cache fixture",
+      voice: exactOnlyVoice,
+      featureFlags: flags,
+    });
+    const actorGlobalPlan = planAiSpeechCache({
+      utteranceClass: "private-response",
+      textTemplate: "Synthetic cache fixture",
+      voice: exactOnlyVoice,
+      actorScopeKey: "global",
+      containsPrivateContext: true,
+      featureFlags: flags,
+    });
+    const actorWhitespacePlans = ["actor  one", "actor one"].map(
+      (actorScopeKey) =>
+        planAiSpeechCache({
+          utteranceClass: "private-response",
+          textTemplate: "Synthetic cache fixture",
+          voice: exactOnlyVoice,
+          actorScopeKey,
+          containsPrivateContext: true,
+          featureFlags: flags,
+        })
+    );
+
+    expect(globalPlan.sharingScope).toBe("global");
+    expect(actorGlobalPlan.sharingScope).toBe("actor");
+    expect(actorGlobalPlan.exactKey).not.toBe(globalPlan.exactKey);
+    expect(actorWhitespacePlans[0]?.exactKey).not.toBe(
+      actorWhitespacePlans[1]?.exactKey
+    );
+    expect(actorWhitespacePlans.every((plan) => plan.mode === "exact")).toBe(
+      true
+    );
+  });
+
   it("builds a normalized near-reuse fingerprint", () => {
     expect(
       createAiSpeechNearReuseFingerprint("Welcome   back, Ranger!!!")

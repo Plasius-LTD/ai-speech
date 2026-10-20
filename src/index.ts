@@ -374,6 +374,7 @@ export interface AiSpeechCacheKeyInput {
   readonly pronunciationVersion: string;
   readonly normalizedRenderText: string;
   readonly styleId?: string;
+  /** Optional opaque actor key; absent selects global scope. */
   readonly scopeDiscriminator?: string;
 }
 
@@ -405,6 +406,7 @@ export interface PlanAiSpeechCacheInput {
   readonly playerAddress?: AiSpeechPlayerAddressInput;
   readonly voice: AiSpeechVoiceProfileRef;
   readonly featureFlags?: AiSpeechFeatureFlagSnapshot;
+  /** Opaque actor identity; nonblank values are preserved in cache keys. */
   readonly actorScopeKey?: string;
   readonly containsPersonalData?: boolean;
   readonly containsPrivateContext?: boolean;
@@ -424,7 +426,16 @@ export interface AiSpeechCachePlan {
 }
 
 export function createAiSpeechCacheKey(input: AiSpeechCacheKeyInput): string {
-  const scopeDiscriminator = normalizeWhitespace(input.scopeDiscriminator ?? "");
+  const scopeDiscriminator = input.scopeDiscriminator;
+  if (scopeDiscriminator !== undefined && scopeDiscriminator.trim().length === 0) {
+    throw new Error("Actor scope key must be a non-empty string.");
+  }
+
+  const scopeSegment =
+    scopeDiscriminator === undefined
+      ? "scope-v2-global"
+      : `scope-v2-actor:${scopeDiscriminator}`;
+
   return [
     requireNonEmptyString(input.providerId, "Provider id"),
     requireNonEmptyString(input.modelId, "Model id"),
@@ -436,7 +447,7 @@ export function createAiSpeechCacheKey(input: AiSpeechCacheKeyInput): string {
       input.pronunciationVersion,
       "Pronunciation version"
     ),
-    scopeDiscriminator || "global",
+    scopeSegment,
     normalizeAiSpeechText(input.normalizedRenderText),
   ]
     .map((segment) => encodeURIComponent(segment))
@@ -510,12 +521,12 @@ export function planAiSpeechCache(
     Boolean(input.containsPrivateContext) ||
     Boolean(input.containsModerationNotice) ||
     Boolean(rendered.playerAddress?.redacted);
-  const actorScopeKey = normalizeWhitespace(input.actorScopeKey ?? "");
+  const actorScopeKey = input.actorScopeKey ?? "";
 
   const actorScopeRequired =
     containsSensitiveContent || input.utteranceClass === "private-response";
 
-  if (actorScopeRequired && !actorScopeKey) {
+  if (actorScopeRequired && actorScopeKey.trim().length === 0) {
     return {
       mode: "no-cache",
       sharingScope: "none",
