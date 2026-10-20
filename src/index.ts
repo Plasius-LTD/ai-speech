@@ -444,12 +444,20 @@ export function createAiSpeechCacheKey(input: AiSpeechCacheKeyInput): string {
 }
 
 export function createAiSpeechNearReuseFingerprint(value: string): string {
+  return requireNonEmptyString(
+    normalizeAiSpeechNearReuseFingerprint(value),
+    "Near-reuse fingerprint"
+  );
+}
+
+function normalizeAiSpeechNearReuseFingerprint(value: string): string {
   const normalized = normalizeAiSpeechText(value)
-    .replace(/[^a-z0-9\s]/gu, " ")
+    .normalize("NFC")
+    .replace(/[^\p{L}\p{N}\p{M}\s]/gu, " ")
     .replace(/\s+/gu, " ")
     .trim();
 
-  return requireNonEmptyString(normalized, "Near-reuse fingerprint");
+  return /[\p{L}\p{N}]/u.test(normalized) ? normalized : "";
 }
 
 export function isAiSpeechNearReuseSafeClass(
@@ -552,11 +560,26 @@ export function planAiSpeechCache(
 
   enabledFeatureFlags.push(AI_SPEECH_FEATURE_FLAGS.ttsNearReuse);
 
+  const nearReuseFingerprint = normalizeAiSpeechNearReuseFingerprint(
+    rendered.normalizedRenderText
+  );
+
+  if (!nearReuseFingerprint) {
+    return {
+      mode: "exact",
+      sharingScope: actorScopeRequired ? "actor" : "global",
+      renderText: rendered.renderText,
+      normalizedRenderText: rendered.normalizedRenderText,
+      exactKey,
+      enabledFeatureFlags,
+      playerAddress: rendered.playerAddress,
+      reasonCodes: ["near-reuse-fingerprint-unavailable-exact-fallback"],
+    };
+  }
+
   const nearKey = createAiSpeechCacheKey({
     ...input.voice,
-    normalizedRenderText: createAiSpeechNearReuseFingerprint(
-      rendered.normalizedRenderText
-    ),
+    normalizedRenderText: nearReuseFingerprint,
   });
 
   return {
