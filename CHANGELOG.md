@@ -13,6 +13,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - (placeholder)
 
 - **Fixed**
+  - (placeholder)
+
+- **Security**
+  - (placeholder)
+
+## [1.0.8] - 2026-10-20
+
+- **Added**
+  - (placeholder)
+
+- **Changed**
+  - (placeholder)
+
+- **Fixed**
   - TTS near-reuse fingerprinting now preserves multilingual letters and safely falls back to exact caching when text contains no reusable lexical content.
 
 - **Security**
@@ -225,3 +239,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [1.0.5]: https://github.com/Plasius-LTD/ai-speech/releases/tag/v1.0.5
 [1.0.6]: https://github.com/Plasius-LTD/ai-speech/releases/tag/v1.0.6
 [1.0.7]: https://github.com/Plasius-LTD/ai-speech/releases/tag/v1.0.7
+[1.0.8]: https://github.com/Plasius-LTD/ai-speech/releases/tag/v1.0.8
