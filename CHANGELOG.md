@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - (placeholder)
 
 - **Fixed**
-  - (placeholder)
+  - TTS near-reuse fingerprinting now preserves multilingual letters and safely falls back to exact caching when text contains no reusable lexical content.
 
 - **Security**
   - (placeholder)

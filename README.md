@@ -150,8 +150,12 @@ namespace. Host applications remain responsible for remote flag evaluation.
 
 - User names, account handles, and user-renamed character names are redacted to a generic label such as `Player`.
 - Near-text reuse is blocked for redacted identifiers, personal data, moderation notices, and private player context.
+- Near-reuse fingerprints normalize text to Unicode NFC, preserve letters, numbers, and combining marks, and use punctuation or symbols as separators.
+- If near-reuse normalization finds no letters or numbers, planning falls back to the exact cache key with `near-reuse-fingerprint-unavailable-exact-fallback`; it never creates a shared empty fingerprint.
 - Sensitive speech can only produce an actor-scoped exact cache plan when the caller provides an explicit `actorScopeKey`.
 - Provider adapters must declare whether they allow no cache, exact-only cache, or exact-plus-near cache decisions.
+
+Near keys for multilingual text differ from keys produced by older ASCII-only normalization. Existing entries under those old near keys will not be reused by the updated planner. Hosts with persistent or non-expiring near-cache storage should invalidate old near entries before enabling the updated package. Exact cache keys are unchanged.
 
 ## Rollback
 

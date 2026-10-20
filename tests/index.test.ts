@@ -213,6 +213,89 @@ describe("ai-speech cache contracts", () => {
     ).toBe("welcome back ranger");
   });
 
+  it("preserves multilingual letters, combining marks, and digits in fingerprints", () => {
+    expect(createAiSpeechNearReuseFingerprint("こんにちは 世界 2026")).toBe(
+      "こんにちは 世界 2026"
+    );
+    expect(createAiSpeechNearReuseFingerprint("مرحبا بالعالم")).toBe(
+      "مرحبا بالعالم"
+    );
+    expect(createAiSpeechNearReuseFingerprint("ПРИВЕТ МИР")).toBe(
+      "привет мир"
+    );
+    expect(createAiSpeechNearReuseFingerprint("café cafe\u0301")).toBe(
+      "café café"
+    );
+    expect(createAiSpeechNearReuseFingerprint("東京2026、開始！")).toBe(
+      "東京2026 開始"
+    );
+  });
+
+  it("does not alias different Japanese utterances after fingerprinting", () => {
+    const flags = {
+      [AI_SPEECH_FEATURE_FLAGS.ttsCache]: true,
+      [AI_SPEECH_FEATURE_FLAGS.ttsNearReuse]: true,
+    };
+
+    const greeting = planAiSpeechCache({
+      utteranceClass: "system-generic",
+      textTemplate: "こんにちは1",
+      voice: { ...voice, locale: "ja-JP" },
+      featureFlags: flags,
+    });
+    const farewell = planAiSpeechCache({
+      utteranceClass: "system-generic",
+      textTemplate: "さようなら1",
+      voice: { ...voice, locale: "ja-JP" },
+      featureFlags: flags,
+    });
+
+    expect(greeting.mode).toBe("near");
+    expect(farewell.mode).toBe("near");
+    expect(greeting.nearKey).not.toBe(farewell.nearKey);
+  });
+
+  it.each(["こんにちは世界", "漢字2026、開始！", "مرحبا بالعالم", "Привет мир"])(
+    "produces a near plan without throwing for multilingual text: %s",
+    (textTemplate) => {
+      expect(
+        planAiSpeechCache({
+          utteranceClass: "system-generic",
+          textTemplate,
+          voice,
+          featureFlags: {
+            [AI_SPEECH_FEATURE_FLAGS.ttsCache]: true,
+            [AI_SPEECH_FEATURE_FLAGS.ttsNearReuse]: true,
+          },
+        })
+      ).toMatchObject({
+        mode: "near",
+        reasonCodes: ["near-reuse-eligible"],
+      });
+    }
+  );
+
+  it.each(["!!!", "🔥✨", "  !!! 🔥  ", "\u0301"])(
+    "falls back to exact reuse when no safe near fingerprint exists: %s",
+    (textTemplate) => {
+      expect(
+        planAiSpeechCache({
+          utteranceClass: "system-generic",
+          textTemplate,
+          voice,
+          featureFlags: {
+            [AI_SPEECH_FEATURE_FLAGS.ttsCache]: true,
+            [AI_SPEECH_FEATURE_FLAGS.ttsNearReuse]: true,
+          },
+        })
+      ).toMatchObject({
+        mode: "exact",
+        sharingScope: "global",
+        reasonCodes: ["near-reuse-fingerprint-unavailable-exact-fallback"],
+      });
+    }
+  );
+
   it("returns disabled when the cache flag is off", () => {
     expect(
       planAiSpeechCache({
